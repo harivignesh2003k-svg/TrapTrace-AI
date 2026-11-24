@@ -1,0 +1,12 @@
+
+timestamp,source,event_type,description,severity
+2026-11-24T09:00:00,Network,Failed Login,Repeated login failure,high
+2026-11-24T09:02:00,Network,Failed Login,Multiple incorrect password attempts,high
+2026-11-24T09:03:00,Network,Failed Login,Suspicious login activity,critical
+2026-11-24T09:05:00,System,File Modification,Unexpected configuration change,medium
+2026-11-24T09:08:00,Application,Unauthorized Access,Unauthorized resource access,critical
+2026-11-24T09:10:00,Network,Port Scan,Multiple ports accessed,high
+2026-11-24T09:15:00,System,Normal Activity,Regular system operation,low
+2026-11-24T09:20:00,Application,Normal Activity,Successful application operation,low
+2026-11-24T09:25:00,Network,Connection Attempt,Unusual connection attempt,medium
+2026-11-24T09:30:00,System,Privilege Change,Unexpected privilege modification,high
