@@ -1,11 +1,12 @@
 
 import os
+import html
 import pandas as pd
 import streamlit as st
 
-# --------------------------------------------------
-# PAGE CONFIGURATION
-# --------------------------------------------------
+# ==================================================
+# 1. PAGE CONFIGURATION
+# ==================================================
 
 st.set_page_config(
     page_title="TrapTrace-AI | Security Operations Center",
@@ -14,9 +15,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --------------------------------------------------
-# CUSTOM DARK THEME
-# --------------------------------------------------
+# ==================================================
+# 2. CUSTOM DARK THEME
+# ==================================================
 
 st.markdown("""
 <style>
@@ -39,7 +40,7 @@ h1, h2, h3 {
     color: #f8fafc !important;
 }
 
-p, label, span {
+p, label {
     color: #cbd5e1;
 }
 
@@ -62,7 +63,6 @@ hr {
     border-color: #263449;
 }
 
-div.stButton > button,
 div.stDownloadButton > button {
     background-color: #0ea5e9;
     color: white;
@@ -70,7 +70,6 @@ div.stDownloadButton > button {
     border-radius: 8px;
 }
 
-div.stButton > button:hover,
 div.stDownloadButton > button:hover {
     background-color: #0284c7;
     color: white;
@@ -79,6 +78,14 @@ div.stDownloadButton > button:hover {
 .alert-box {
     background-color: #351b25;
     border-left: 5px solid #ef4444;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.warning-box {
+    background-color: #352b18;
+    border-left: 5px solid #f59e0b;
     padding: 12px 16px;
     border-radius: 8px;
     margin-bottom: 10px;
@@ -100,18 +107,12 @@ div.stDownloadButton > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-# --------------------------------------------------
-# HEADER
-# --------------------------------------------------
+# ==================================================
+# 3. HEADER
+# ==================================================
 
-st.markdown(
-    "<h1>🛡️ TrapTrace-AI</h1>",
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    "### CYBERSECURITY THREAT MONITORING CENTER"
-)
+st.markdown("# 🛡️ TrapTrace-AI")
+st.markdown("### CYBERSECURITY THREAT MONITORING CENTER")
 
 st.caption(
     "Security Event Analysis | Threat Detection | Event Correlation"
@@ -119,21 +120,21 @@ st.caption(
 
 st.markdown("---")
 
-# --------------------------------------------------
-# LOAD SECURITY EVENTS
-# --------------------------------------------------
+# ==================================================
+# 4. LOAD SECURITY EVENTS
+# ==================================================
 
 file_path = "security_events.csv"
 
 if not os.path.exists(file_path):
     st.error("Security events file not found.")
-    st.info("Run the project first using: python run_project.py")
+    st.info("Run the main project first using: python run_project.py")
     st.stop()
 
 try:
     df = pd.read_csv(file_path)
 except Exception as error:
-    st.error(f"Could not read security events: {error}")
+    st.error(f"Unable to read security events: {error}")
     st.stop()
 
 required_columns = [
@@ -153,12 +154,13 @@ if missing_columns:
     st.error(f"Missing required columns: {missing_columns}")
     st.stop()
 
-df["severity"] = df["severity"].fillna("unknown").astype(str)
-df["source"] = df["source"].fillna("Unknown").astype(str)
+# Clean missing values
+for column in required_columns:
+    df[column] = df[column].fillna("Unknown").astype(str)
 
-# --------------------------------------------------
-# SIDEBAR CONTROLS
-# --------------------------------------------------
+# ==================================================
+# 5. SIDEBAR FILTERS
+# ==================================================
 
 st.sidebar.title("⚙️ Dashboard Controls")
 st.sidebar.markdown("---")
@@ -185,9 +187,9 @@ search_text = st.sidebar.text_input(
 st.sidebar.markdown("---")
 st.sidebar.caption("TrapTrace-AI | Prototype v1.0")
 
-# --------------------------------------------------
-# APPLY FILTERS
-# --------------------------------------------------
+# ==================================================
+# 6. APPLY FILTERS
+# ==================================================
 
 filtered_df = df.copy()
 
@@ -202,30 +204,31 @@ if selected_severity != "All":
         == selected_severity.lower()
     ]
 
-if search_text:
+if search_text.strip():
     search_mask = filtered_df.astype(str).apply(
         lambda column: column.str.contains(
-            search_text,
+            search_text.strip(),
             case=False,
-            na=False
+            na=False,
+            regex=False
         )
     ).any(axis=1)
 
     filtered_df = filtered_df[search_mask]
 
-# --------------------------------------------------
-# KPI METRICS
-# --------------------------------------------------
+# ==================================================
+# 7. SECURITY OVERVIEW METRICS
+# ==================================================
 
 total_events = len(filtered_df)
 
-high_risk_events = filtered_df[
+high_risk_df = filtered_df[
     filtered_df["severity"].str.lower().isin(
         ["high", "critical"]
     )
 ]
 
-high_risk_count = len(high_risk_events)
+high_risk_count = len(high_risk_df)
 
 critical_count = (
     filtered_df["severity"].str.lower() == "critical"
@@ -244,37 +247,39 @@ col4.metric("Sources Monitored", source_count)
 
 st.markdown("---")
 
-# --------------------------------------------------
-# SYSTEM STATUS
-# --------------------------------------------------
+# ==================================================
+# 8. SYSTEM THREAT STATUS
+# ==================================================
 
 if critical_count > 0:
     st.markdown(
         f"""
         <div class="alert-box">
         <strong>🚨 CRITICAL THREATS DETECTED</strong><br>
-        {critical_count} critical event(s) found in the filtered data.
+        {critical_count} critical event(s) found in the selected data.
         Review the threat alerts below.
         </div>
         """,
         unsafe_allow_html=True
     )
+
 elif high_risk_count > 0:
     st.markdown(
         """
-        <div class="info-box">
+        <div class="warning-box">
         <strong>⚠️ HIGH-RISK ACTIVITY DETECTED</strong><br>
-        Review the security event log for suspicious activity.
+        Suspicious activity requires further investigation.
         </div>
         """,
         unsafe_allow_html=True
     )
-else:
-    st.success("No high-risk events detected in the filtered data.")
 
-# --------------------------------------------------
-# CHARTS
-# --------------------------------------------------
+else:
+    st.success("No high-risk events found in the selected data.")
+
+# ==================================================
+# 9. THREAT ANALYTICS
+# ==================================================
 
 st.subheader("📈 Threat Analytics")
 
@@ -306,24 +311,32 @@ with right:
 
 st.markdown("---")
 
-# --------------------------------------------------
-# THREAT ALERTS
-# --------------------------------------------------
+# ==================================================
+# 10. THREAT ALERTS
+# ==================================================
 
 st.subheader("🚨 Threat Alerts")
 
-if high_risk_events.empty:
+if high_risk_df.empty:
     st.success("No high-risk events in the current selection.")
+
 else:
-    for _, event in high_risk_events.iterrows():
-        severity = event["severity"].upper()
+    for _, event in high_risk_df.iterrows():
+
+        severity = html.escape(
+            event["severity"].upper()
+        )
+
+        source = html.escape(event["source"])
+        event_type = html.escape(event["event_type"])
+        description = html.escape(event["description"])
 
         st.markdown(
             f"""
             <div class="alert-box">
-            <strong>{severity} | {event["source"]}</strong><br>
-            Event: {event["event_type"]}<br>
-            Details: {event["description"]}
+            <strong>{severity} | {source}</strong><br>
+            Event: {event_type}<br>
+            Details: {description}
             </div>
             """,
             unsafe_allow_html=True
@@ -331,9 +344,9 @@ else:
 
 st.markdown("---")
 
-# --------------------------------------------------
-# SECURITY EVENT LOG
-# --------------------------------------------------
+# ==================================================
+# 11. SECURITY EVENT LOG
+# ==================================================
 
 st.subheader("📋 Security Event Log")
 
@@ -343,13 +356,13 @@ st.caption(
 
 st.dataframe(
     filtered_df,
-    use_container_width=True,
+    width="stretch",
     hide_index=True
 )
 
-# --------------------------------------------------
-# DOWNLOAD SECURITY DATA
-# --------------------------------------------------
+# ==================================================
+# 12. DOWNLOAD SECURITY REPORT
+# ==================================================
 
 st.markdown("---")
 st.subheader("📥 Export Security Data")
@@ -361,34 +374,44 @@ st.download_button(
     data=csv_data,
     file_name="TrapTrace_AI_Security_Report.csv",
     mime="text/csv",
-    use_container_width=True
+    width="stretch"
 )
 
-# --------------------------------------------------
-# PROJECT INFORMATION
-# --------------------------------------------------
+# ==================================================
+# 13. PROJECT INFORMATION
+# ==================================================
 
 st.markdown("---")
 
 with st.expander("ℹ️ About TrapTrace-AI and Detection Methodology"):
+
     st.markdown("""
-    **TrapTrace-AI** is a prototype cybersecurity event monitoring
-    and threat detection platform.
+    **TrapTrace-AI** is a prototype cybersecurity event
+    monitoring and threat detection platform.
 
-    **Core modules:**
-    - Event Collector: Collects and stores security events.
-    - Event Analyzer: Analyzes event severity and patterns.
-    - Threat Detector: Identifies repeated failed logins and critical events.
-    - Correlation Engine: Groups suspicious activity by source.
-    - Report Generator: Produces security reports.
+    **Core Modules:**
 
-    **Current detection approach:**
-    Rule-based detection and event correlation using sample security events.
+    1. Event Collector – Collects and stores security events.
+    2. Event Analyzer – Analyzes event severity and patterns.
+    3. Threat Detector – Identifies repeated failed logins
+       and critical events.
+    4. Correlation Engine – Groups suspicious activity by source.
+    5. Report Generator – Produces security reports.
 
-    **Important:** This version uses locally generated sample data.
-    It does not yet provide live network monitoring or production-grade
-    machine-learning threat detection.
+    **Current Detection Approach:**
+
+    Rule-based detection and event correlation using
+    locally generated sample security events.
+
+    **Current Limitations:**
+
+    This version does not yet provide live network monitoring
+    or production-grade machine-learning threat detection.
     """)
+
+# ==================================================
+# 14. FOOTER
+# ==================================================
 
 st.markdown("""
 <div class="footer">
@@ -396,3 +419,4 @@ TRAPTRACE-AI | CYBERSECURITY MONITORING PROTOTYPE<br>
 Built with Python, Pandas and Streamlit
 </div>
 """, unsafe_allow_html=True)
+    
