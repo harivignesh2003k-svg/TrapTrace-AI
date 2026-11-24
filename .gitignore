@@ -1,0 +1,27 @@
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Generated security data
+security_events.csv
+threat_report.txt
+
+# IDE files
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
